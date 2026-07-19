@@ -1,5 +1,7 @@
 package com.jobmatcher.jobmatcher_backend.config;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,7 +20,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
-import java.util.List;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
@@ -28,7 +29,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class SecurityConfig {
 
     @Autowired
-    private  UserDetailsService userDetailsService;
+    private UserDetailsService userDetailsService;
 
     @Autowired
     private JwtFilter jwtFilter;
@@ -40,8 +41,8 @@ public class SecurityConfig {
     @Bean
     public AuthenticationProvider authProvider() {
 
-        DaoAuthenticationProvider provider =
-                new DaoAuthenticationProvider(userDetailsService);
+        DaoAuthenticationProvider provider
+                = new DaoAuthenticationProvider(userDetailsService);
         provider.setPasswordEncoder(new BCryptPasswordEncoder(12));
         return provider;
     }
@@ -51,47 +52,40 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
-                .cors(Customizer.withDefaults())  
+                .cors(Customizer.withDefaults())
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        //  ALLOW AUTH APIs (VERY IMPORTANT)
-                        .requestMatchers("/auth/**").permitAll()
-                        // ALLOW Public jobs
-                        .requestMatchers(HttpMethod.GET, "/jobs").permitAll()
-                        // Recruiter's own jobs
-                        .requestMatchers(HttpMethod.GET, "/jobs/recruiter").hasRole("RECRUITER")
-                        //  Job detail — recruiters and candidates can view
-                        .requestMatchers(HttpMethod.GET, "/jobs/**").hasAnyRole("RECRUITER", "CANDIDATE")
-                        .requestMatchers(HttpMethod.POST, "/jobs").hasRole("RECRUITER")
-                        .requestMatchers(HttpMethod.PUT, "/jobs/**").hasRole("RECRUITER")
-                        .requestMatchers(HttpMethod.DELETE, "/jobs/**").hasRole("RECRUITER")
-
-                        .requestMatchers(HttpMethod.POST, "/api/ai/**").permitAll()
-                        // User profile, password, image
-                        .requestMatchers("/users/**").authenticated()
-
-                        // Applications — role enforcement handled by @PreAuthorize on controller
-                        .requestMatchers("/applications/**").authenticated()
-
-                        // Notifications
-                        .requestMatchers("/notifications/**").authenticated()
-
-                        // Resume — upload/delete restricted to CANDIDATE via @PreAuthorize
-                        .requestMatchers("/resume/**").authenticated()
-                        // Serve uploaded files publicly (direct link access)
-                        .requestMatchers("/uploads/resumes/**").permitAll()
-                        .requestMatchers("/uploads/profile-images/**").permitAll()
-                        //AI intergration
-                        .requestMatchers("/api/ai/**").authenticated()
-
-                        .requestMatchers("/api/resume/**").authenticated()
-
-                        //  Everything else
-                        .anyRequest().authenticated()
-
+                //  ALLOW AUTH APIs (VERY IMPORTANT)
+                .requestMatchers("/auth/**").permitAll()
+                // ALLOW Public jobs
+                .requestMatchers(HttpMethod.GET, "/jobs").permitAll()
+                // Recruiter's own jobs
+                .requestMatchers(HttpMethod.GET, "/jobs/recruiter").hasRole("RECRUITER")
+                //  Job detail — recruiters and candidates can view
+                .requestMatchers(HttpMethod.GET, "/jobs/**").hasAnyRole("RECRUITER", "CANDIDATE")
+                .requestMatchers(HttpMethod.POST, "/jobs").hasRole("RECRUITER")
+                .requestMatchers(HttpMethod.PUT, "/jobs/**").hasRole("RECRUITER")
+                .requestMatchers(HttpMethod.DELETE, "/jobs/**").hasRole("RECRUITER")
+                .requestMatchers(HttpMethod.POST, "/api/ai/**").permitAll()
+                // User profile, password, image
+                .requestMatchers("/users/**").authenticated()
+                // Applications — role enforcement handled by @PreAuthorize on controller
+                .requestMatchers("/applications/**").authenticated()
+                // Notifications
+                .requestMatchers("/notifications/**").authenticated()
+                // Resume — upload/delete restricted to CANDIDATE via @PreAuthorize
+                .requestMatchers("/resume/**").authenticated()
+                // Serve uploaded files publicly (direct link access)
+                .requestMatchers("/uploads/resumes/**").permitAll()
+                .requestMatchers("/uploads/profile-images/**").permitAll()
+                //AI intergration
+                .requestMatchers("/api/ai/**").authenticated()
+                .requestMatchers("/api/resume/**").authenticated()
+                //  Everything else
+                .anyRequest().authenticated()
                 )
-                .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                .sessionManagement(session
+                        -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
@@ -99,11 +93,15 @@ public class SecurityConfig {
     }
 
     @Bean
-        public CorsConfigurationSource corsConfigurationSource() {
+    public CorsConfigurationSource corsConfigurationSource() {
 
         CorsConfiguration config = new CorsConfiguration();
 
-        config.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:5173"));
+        config.setAllowedOrigins(List.of(
+                "http://localhost:3000",
+                "http://localhost:5173",
+                "https://job-genius-ai-phi.vercel.app"
+        ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
@@ -112,7 +110,7 @@ public class SecurityConfig {
         source.registerCorsConfiguration("/**", config);
 
         return source;
-        }
+    }
 
     // ✅ Authentication Manager
     @Bean
